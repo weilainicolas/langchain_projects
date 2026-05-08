@@ -37,6 +37,7 @@ python -m agents.<agent_name>.main
 | Name | What it does | Entrypoint |
 |------|--------------|------------|
 | [news_digest](agents/news_digest/) | Daily NewsAPI -> OpenAI -> Telegram digest | `python -m agents.news_digest.main` |
+| [quant_bot](agents/quant_bot/) | Multi-agent crypto swing committee (LangGraph) producing a TradeTicket | `python -m agents.quant_bot.main --asset BTC/USDT` |
 
 ## Conventions
 - One agent = one folder under `agents/`.

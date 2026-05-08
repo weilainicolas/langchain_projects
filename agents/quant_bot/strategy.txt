@@ -1,0 +1,51 @@
+
+## The "Dual-Window" Scalping Strategy
+
+### 1. The Setup (The 30-Minute Anchor)
+We use the 30m chart to define the "Immediate Bias." We don't care about the 4-hour trend here; we only care about where the momentum has been for the last few hours.
+
+*   **The Filter:** 50-period EMA (Exponential Moving Average).
+*   **The Momentum:** RSI (14).
+*   **Bias Rule:** 
+    *   If Price > 30m EMA 50 and RSI > 50: **Long Bias Only.**
+    *   If Price < 30m EMA 50 and RSI < 40: **Short Bias Only.**
+
+### 2. The Execution (The 15-Minute Trigger)
+This is where we look for the precise entry. We use a **Bollinger Band (20, 2) Breakout** combined with an **EMA Cross**.
+
+#### **Long Entry (Buy)**
+1.  **Context:** 30m chart shows a Long Bias.
+2.  **Trigger:** 15m candle closes **above** the Upper Bollinger Band.
+3.  **Confirmation:** The 15m 9 EMA crosses above the 21 EMA.
+4.  **Volume:** The breakout candle must have higher volume than the previous 5 candles.
+
+#### **Short Entry (Sell)**
+1.  **Context:** 30m chart shows a Short Bias.
+2.  **Trigger:** 15m candle closes **below** the Lower Bollinger Band.
+3.  **Confirmation:** The 15m 9 EMA crosses below the 21 EMA.
+4.  **Volume:** The breakout candle must have higher volume than the previous 5 candles.
+
+---
+
+## 3. Risk & Trade Management (Strict)
+
+In lower timeframes, noise is high. You must be disciplined with exits to avoid getting "chopped."
+
+| Feature | Setting |
+| :--- | :--- |
+| **Stop Loss** | Set at the **Middle Bollinger Band** (20 SMA) of the 15m chart at the time of entry. |
+| **Take Profit 1** | 1:1 Risk/Reward (Close 50% and move Stop Loss to Break Even). |
+| **Take Profit 2** | Exit when the 15m RSI crosses back over the 50 level in the opposite direction. |
+| **Max Risk** | 0.5% - 1.0% of account equity per trade. |
+
+---
+
+## 4. Why this fixes "Bad Backtests"
+
+1.  **Reduced Lag:** By removing the 4h and 1h filters, you enter the move much earlier. In BTC, the biggest moves often happen before the 4h EMA even reacts.
+2.  **Volatility Capture:** Using Bollinger Bands as a trigger ensures you only enter when there is an expansion in price action, avoiding "sideways" markets that kill EMA-only strategies.
+3.  **Bias Alignment:** By checking the 30m chart, you ensure you aren't just "chasing" a 15m spike that is actually just a retracement of a larger move.
+
+### Quantitative Tip for Implementation:
+When coding the backtest in Python, add a **"Cooldown Period"** of 4 bars after a stop-out. On 15m/30m charts, BTC often "fake-breaks" a level, hits stops, and then continues. A cooldown prevents the bot from entering the same bad trade multiple times.
+
