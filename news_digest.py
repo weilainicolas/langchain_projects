@@ -12,9 +12,9 @@ import os
 import sys
 from datetime import datetime, timezone
 
-import anthropic
 import requests
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
@@ -22,6 +22,7 @@ NEWSAPI_KEY = os.environ["NEWSAPI_KEY"]
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
+OPENAI_MODEL = "gpt-4o"
 TOPICS = "AI / tech, business / markets, world / geopolitics"
 DIGEST_SIZE = 10
 TELEGRAM_MAX_LEN = 4096
@@ -98,38 +99,42 @@ DIGEST_SCHEMA = {
 }
 
 
-def rank_with_claude(articles: list[dict]) -> list[dict]:
-    """Use Claude to pick and summarize the top stories."""
-    client = anthropic.Anthropic()
+def rank_stories(articles: list[dict]) -> list[dict]:
+    """Use the LLM to pick and summarize the top stories."""
+    client = OpenAI()
 
-    prompt = f"""You are picking the {DIGEST_SIZE} most important news stories from the last 24 hours for a reader who cares about: {TOPICS}.
-
-You have {len(articles)} headlines below as JSON. Rank them by importance using these criteria:
-1. Topical relevance (AI/tech, business/markets, world/geopolitics)
-2. Cross-source consensus — stories covered by multiple outlets bubble up
-3. Your own judgment of consequence (impact, scope, novelty)
-
-Group similar stories: if 5 outlets cover the same event, list it once with all sources combined. Skip celebrity gossip, sports, and human-interest unless genuinely consequential.
-
-Write summaries that explain WHY a story matters, not just WHAT happened. Be tight — 1-2 sentences each.
-
-Headlines:
-{json.dumps(articles, indent=2)}
-"""
-
-    response = client.messages.create(
-        model="claude-opus-4-7",
-        max_tokens=8000,
-        thinking={"type": "adaptive"},
-        output_config={
-            "effort": "high",
-            "format": {"type": "json_schema", "schema": DIGEST_SCHEMA},
-        },
-        messages=[{"role": "user", "content": prompt}],
+    system_msg = (
+        f"You pick the {DIGEST_SIZE} most important news stories from the last 24 hours "
+        f"for a reader who cares about: {TOPICS}. "
+        "Rank by (1) topical relevance, (2) cross-source consensus — stories covered by "
+        "multiple outlets bubble up, (3) consequence (impact, scope, novelty). "
+        "Group similar stories: if multiple outlets cover the same event, list it once "
+        "and combine the sources. Skip celebrity gossip, sports, and human-interest unless "
+        "genuinely consequential. Summaries must be 1–2 sentences and explain WHY the story "
+        "matters, not just WHAT happened."
+    )
+    user_msg = (
+        f"Here are {len(articles)} headlines. Pick and summarize the top {DIGEST_SIZE}.\n\n"
+        f"{json.dumps(articles, indent=2)}"
     )
 
-    text = next(b.text for b in response.content if b.type == "text")
-    return json.loads(text)["stories"]
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "news_digest",
+                "schema": DIGEST_SCHEMA,
+                "strict": True,
+            },
+        },
+    )
+
+    return json.loads(response.choices[0].message.content)["stories"]
 
 
 def format_for_telegram(stories: list[dict]) -> str:
@@ -187,8 +192,8 @@ def main() -> None:
         print("No articles fetched — check NEWSAPI_KEY or rate limits.", file=sys.stderr)
         sys.exit(1)
 
-    print("Asking Claude to rank and summarize...", file=sys.stderr)
-    stories = rank_with_claude(articles)
+    print(f"Asking {OPENAI_MODEL} to rank and summarize...", file=sys.stderr)
+    stories = rank_stories(articles)
     print(f"  picked {len(stories)} stories", file=sys.stderr)
 
     message = format_for_telegram(stories)
