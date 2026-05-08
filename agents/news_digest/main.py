@@ -1,7 +1,7 @@
-"""Daily news digest: NewsAPI -> Claude (rank + summarize) -> Telegram.
+"""Daily news digest: NewsAPI -> OpenAI (rank + summarize) -> Telegram.
 
-Run: python news_digest.py
-Requires: .env with ANTHROPIC_API_KEY, NEWSAPI_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+Run from repo root: python -m agents.news_digest.main
+Requires: .env with OPENAI_API_KEY, NEWSAPI_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 """
 
 from __future__ import annotations

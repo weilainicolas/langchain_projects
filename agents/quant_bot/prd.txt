@@ -1,0 +1,75 @@
+# PRD: Project "Sentinel Committee" (Crypto Swing Edition)
+
+## 1. System Goal
+Build an autonomous multi-agent system that identifies, validates, and backtests **Crypto Swing Trades** with a 14-day to 60-day horizon. The system must achieve a consensus between conflicting expert agents before outputting a "Trade Ticket."
+
+## 2. Technical Stack
+*   **Language:** Python 3.11+
+*   **Orchestration:** LangGraph (Stateful, cyclic workflows)
+*   **Validation:** Pydantic AI (Strict schema enforcement)
+*   **Data:** CCXT (Binance/Hyperliquid) and yfinance.
+*   **LLM:** Gemini 1.5 Pro (via Vertex AI or Google AI SDK) for Vision and Long Context.
+
+---
+
+## 3. Core Architecture (The Committee)
+
+Claude Code should initialize the following specialized agents:
+
+1.  **The Trend Scout (Technical):**
+    *   **Timeframes:** Multi-timeframe analysis (W1 for Trend, D1 for Setup, H4 for Entry).
+    *   **Indicators:** EMA 50/200, RSI (14), Bollinger Bands, and Volume Profile.
+2.  **The Sentiment Scout:**
+    *   **Tools:** Crawl4AI to scrape crypto news and "Smart Money" wallet tracking via block explorers.
+    *   **Logic:** Detects divergence between price and social hype.
+3.  **The Adversarial Critic (The "Red Team"):**
+    *   **Role:** Specifically tasked with finding "The Trap." It must identify bearish divergences or liquidity gaps that could invalidate a long setup.
+4.  **The Backtest Auditor:**
+    *   **Role:** Runs a walk-forward simulation on the proposed setup using 2 years of historical data to output a "Strategy Win Rate."
+
+---
+
+## 4. Operational Constraints (The "Swing" Protocol)
+
+*   **Risk Management:** Minimum **1:3 Risk-to-Reward (R:R)** ratio.
+*   **Execution Shield:** Every signal must provide:
+    *   **Entry Zone:** Price range for accumulation.
+    *   **Target 1 & 2:** Specific profit-taking levels.
+    *   **Hard Stop Loss:** The invalidation point based on the previous swing low or a 2-ATR (Average True Range) volatility stop.
+*   **Liquidity Filter:** Only analyze assets with >$100M 24h volume to ensure swing positions don't suffer slippage.
+
+---
+
+## 5. Implementation Roadmap (For Claude Code Prompts)
+
+### **Step 1: Project Scaffolding**
+> "Initialize a Python 3.11 project. Create a `src/` directory with `agents/`, `tools/`, `committee/`, and `data/` subfolders. Create a `schema.py` using Pydantic to define a `TradeTicket` that includes: asset, bias, timeframe, entry_range (tuple), targets (list), stop_loss (float), and backtest_win_rate (float)."
+
+### **Step 2: Data & Backtest Logic**
+> "Implement `src/tools/backtester.py`. Use CCXT to fetch historical Daily and 4-hour data. Create a class `HistoricalValidator` that takes a `TradeTicket` and simulates the trade outcome over the 60 days following the entry date. Calculate the Max Drawdown during the trade duration."
+
+### **Step 3: Multi-Agent Consensus (LangGraph)**
+> "Create `src/committee/engine.py` using LangGraph. Define a state graph where the Trend Scout proposes a trade, the Sentiment Scout adds context, the Critic tries to veto it, and finally, the Backtest Auditor runs a simulation. Only output a final `TradeTicket` if the Backtest Win Rate is >55% and R:R is >3."
+
+---
+
+## 6. Target Output Format (The "Trade Ticket")
+The final output the system generates for the user must be a formatted Markdown report:
+
+| Field | Value |
+| :--- | :--- |
+| **Asset** | BTC/USDT |
+| **Strategy** | D1 Mean Reversion (50 EMA Touch) |
+| **Trade Trifecta** | **Entry:** $64,200 | **Target:** $72,000 | **Stop:** $61,500 |
+| **R:R Ratio** | 1:3.2 |
+| **Backtest Success** | 62% (Based on last 15 similar setups) |
+| **Critic's Warning** | "Daily RSI is approaching overbought; wait for H4 consolidation." |
+
+---
+
+## 7. Developer Instructions for Claude Code
+*   **Safety First:** Do not include any private API keys in the code; use `.env` files.
+*   **Modular Tools:** Ensure every data-fetching function is a "Tool" that can be called by the agents.
+*   **Vision Integration:** When analyzing a chart, use the Gemini Vision capabilities to describe the "Price Action" (e.g., higher highs, lower lows) rather than just reading raw numbers.
+
+**Final Confirmation:** This PRD is now ready to be pasted into Claude Code to begin the `Step 1` scaffolding. How would you like to handle the API keys for the initial build?
