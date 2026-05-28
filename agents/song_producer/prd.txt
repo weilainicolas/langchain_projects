@@ -1,0 +1,49 @@
+song_producer — design notes
+
+Goal
+----
+Take a free-form theme (emotion, topic, keywords, references) and produce a
+song: lyrics + a music spec the user can paste into a generation backend
+(Suno / MusicGen / human-readable chord chart).
+
+Architecture
+------------
+Three nodes in a LangGraph DAG, sequential:
+
+    theme  -->  concept  -->  music  -->  lyrics  -->  SongBundle
+
+- concept: theme -> SongBrief (shared creative frame, see schema.py)
+- music:   SongBrief -> MusicSpec (backend-tagged prompt + finalized structure)
+- lyrics:  SongBrief + MusicSpec -> Lyrics (aligned to section_map)
+
+Why concept first
+-----------------
+Music-first was the original idea but constrains the lyricist to fit syllables
+into a fixed melody. A shared SongBrief lets both downstream nodes target the
+same emotional + structural frame without one dictating to the other.
+
+Why music before lyrics (not parallel)
+--------------------------------------
+The music node may refine `structure` (e.g. extend bridge, drop a pre-chorus).
+The lyrics node needs the finalized section_map to write the right number of
+lines per section. If we ran them in parallel we'd risk a mismatch.
+
+Tuning workflow
+---------------
+Each node has a markdown prompt in prompts/. tuning/tune.py runs the chain
+end-to-end (not just one node — quality is judged on the whole song), asks
+the user to rate, and appends to tuning/feedback.jsonl. Once a node's prompt
+is consistently good, lift its prompts/<node>.md into a Claude Code Skill.
+
+Music backend
+-------------
+config.MUSIC_BACKEND switches the music node's output format. The SongBrief
+upstream is identical regardless. Default: suno (text prompt). Future: abc
+notation for MIDI export.
+
+Open questions
+--------------
+- Should the concept node ask follow-up questions when the theme is too thin,
+  or always commit? Current stance: always commit.
+- Where to store frozen "good" prompts vs the working ones being tuned —
+  for now, prompts/ holds the live version and git history is the archive.
